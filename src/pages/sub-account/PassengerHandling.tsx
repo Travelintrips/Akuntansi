@@ -3,11 +3,14 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Users } from "lucide-react";
+import { Users, ShoppingCart } from "lucide-react";
 import supabase from "@/lib/supabase";
 import { createJournalEntryFromSubAccount } from "@/lib/journalEntries";
+import { useCart } from "@/context/CartContext";
+import { v4 as uuidv4 } from "uuid";
 
 export default function PassengerHandlingPage() {
+  const { addItem } = useCart();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
@@ -26,6 +29,7 @@ export default function PassengerHandlingPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -184,8 +188,8 @@ export default function PassengerHandlingPage() {
             <h1 className="text-3xl font-bold">Passenger Handling</h1>
           </div>
 
-          <div className="bg-card p-6 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-6">
+          <div className="bg-card p-8 rounded-xl border shadow-sm border-teal-200 tosca-emboss">
+            <h2 className="text-2xl font-bold mb-8 text-primary">
               Form Transaksi Passenger Handling
             </h2>
 
@@ -198,7 +202,7 @@ export default function PassengerHandlingPage() {
                   placeholder="Search for a category..."
                   value={selectedCategory || searchTerm}
                   onChange={handleSearchChange}
-                  className="mb-2"
+                  className="mb-2 tosca-emboss"
                 />
                 {selectedCategory && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -249,19 +253,35 @@ export default function PassengerHandlingPage() {
             </div>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm mb-6">
+              <div className="bg-destructive/10 text-destructive p-5 rounded-lg text-base mb-8 shadow-sm border border-destructive/20">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-100 text-green-800 p-3 rounded-md text-sm mb-6">
+              <div className="bg-green-100 text-green-800 p-5 rounded-lg text-base mb-8 shadow-sm border border-green-200">
                 Data berhasil disimpan!
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {addedToCart && (
+              <div className="bg-green-100 text-green-800 p-5 rounded-lg text-base mb-8 shadow-sm border border-green-200 flex items-center">
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Item berhasil ditambahkan ke keranjang!
+                <div className="ml-auto">
+                  <Button
+                    variant="link"
+                    className="text-green-800 p-0 h-auto"
+                    onClick={() => setAddedToCart(false)}
+                  >
+                    ×
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <form className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="kode_transaksi">Kode Transaksi</Label>
                   <Input
@@ -271,6 +291,7 @@ export default function PassengerHandlingPage() {
                     onChange={handleChange}
                     placeholder="PH-001"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -283,6 +304,7 @@ export default function PassengerHandlingPage() {
                     value={formData.tanggal}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -295,6 +317,7 @@ export default function PassengerHandlingPage() {
                     onChange={handleChange}
                     placeholder="Airport Assistance"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -307,6 +330,7 @@ export default function PassengerHandlingPage() {
                     onChange={handleChange}
                     placeholder="Bandara Soekarno-Hatta"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -320,6 +344,7 @@ export default function PassengerHandlingPage() {
                     value={formData.jumlah_penumpang}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -333,6 +358,7 @@ export default function PassengerHandlingPage() {
                     onChange={handleChange}
                     placeholder="500000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -346,6 +372,7 @@ export default function PassengerHandlingPage() {
                     onChange={handleChange}
                     placeholder="400000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -359,6 +386,7 @@ export default function PassengerHandlingPage() {
                     onChange={handleChange}
                     placeholder="25000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -369,7 +397,7 @@ export default function PassengerHandlingPage() {
                     name="profit"
                     value={formData.profit}
                     readOnly
-                    className="bg-muted"
+                    className="bg-muted tosca-emboss"
                   />
                 </div>
               </div>
@@ -382,12 +410,75 @@ export default function PassengerHandlingPage() {
                   value={formData.keterangan}
                   onChange={handleChange}
                   placeholder="Keterangan tambahan..."
+                  className="tosca-emboss"
                 />
               </div>
 
-              <div className="pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Menyimpan..." : "Simpan"}
+              <div className="pt-6 flex gap-2">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Validate required fields
+                    if (
+                      !formData.kode_transaksi ||
+                      !formData.tanggal ||
+                      !formData.nama_layanan ||
+                      !formData.lokasi ||
+                      !formData.harga_jual
+                    ) {
+                      setError(
+                        "Harap isi semua field yang diperlukan sebelum menambahkan ke keranjang",
+                      );
+                      return;
+                    }
+
+                    // Add to cart
+                    const totalPrice =
+                      parseFloat(formData.harga_jual) *
+                      parseInt(formData.jumlah_penumpang);
+
+                    addItem({
+                      id: uuidv4(),
+                      type: "passenger-handling",
+                      name: formData.nama_layanan,
+                      details: `${formData.lokasi} - ${formData.jumlah_penumpang} orang`,
+                      price: parseFloat(formData.harga_jual),
+                      quantity: parseInt(formData.jumlah_penumpang),
+                      date: formData.tanggal,
+                      kode_transaksi: formData.kode_transaksi,
+                      additionalData: { ...formData },
+                    });
+
+                    // Show success message
+                    setAddedToCart(true);
+                    setTimeout(() => setAddedToCart(false), 3000);
+
+                    // Reset form after adding to cart
+                    setFormData({
+                      kode_transaksi: "",
+                      tanggal: "",
+                      nama_layanan: "",
+                      lokasi: "",
+                      jumlah_penumpang: "1",
+                      harga_jual: "",
+                      harga_basic: "",
+                      fee_sales: "",
+                      profit: "",
+                      keterangan: "",
+                    });
+                    setSelectedCategory(null);
+                    setSearchTerm("");
+
+                    // Show success message
+                    setSuccess(true);
+                    setTimeout(() => setSuccess(false), 3000);
+                  }}
+                  disabled={loading}
+                  className="h-12 text-base font-medium rounded-lg transition-all duration-200 hover:scale-[1.02] tosca-emboss-button"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Tambahkan ke Keranjang
                 </Button>
               </div>
             </form>

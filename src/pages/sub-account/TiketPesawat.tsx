@@ -3,9 +3,11 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plane } from "lucide-react";
+import { Plane, ShoppingCart } from "lucide-react";
 import supabase from "@/lib/supabase";
 import { createJournalEntryFromSubAccount } from "@/lib/journalEntries";
+import { useCart } from "@/context/CartContext";
+import { v4 as uuidv4 } from "uuid";
 import {
   Select,
   SelectContent,
@@ -13,8 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 
 export default function TiketPesawatPage() {
+  const { addItem } = useCart();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
@@ -221,25 +225,25 @@ export default function TiketPesawatPage() {
             <h1 className="text-3xl font-bold">Penjualan Tiket Pesawat</h1>
           </div>
 
-          <div className="bg-card p-6 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-6">
+          <div className="bg-card p-8 rounded-xl border shadow-sm border-teal-200 tosca-emboss">
+            <h2 className="text-2xl font-bold mb-8 text-primary">
               Form Transaksi Tiket Pesawat
             </h2>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm mb-6">
+              <div className="bg-destructive/10 text-destructive p-5 rounded-lg text-base mb-8 shadow-sm border border-destructive/20">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-100 text-green-800 p-3 rounded-md text-sm mb-6">
+              <div className="bg-green-100 text-green-800 p-5 rounded-lg text-base mb-8 shadow-sm border border-green-200">
                 Data berhasil disimpan!
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="kode_transaksi">Kode Transaksi</Label>
                   <Input
@@ -249,6 +253,7 @@ export default function TiketPesawatPage() {
                     onChange={handleChange}
                     placeholder="TKT-001"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -261,6 +266,7 @@ export default function TiketPesawatPage() {
                     value={formData.tanggal}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -273,6 +279,7 @@ export default function TiketPesawatPage() {
                     onChange={handleChange}
                     placeholder="Garuda Indonesia"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -285,6 +292,7 @@ export default function TiketPesawatPage() {
                     onChange={handleChange}
                     placeholder="Jakarta - Bali"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -298,6 +306,7 @@ export default function TiketPesawatPage() {
                     onChange={handleChange}
                     placeholder="1000000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -311,6 +320,7 @@ export default function TiketPesawatPage() {
                     onChange={handleChange}
                     placeholder="800000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -324,6 +334,7 @@ export default function TiketPesawatPage() {
                     onChange={handleChange}
                     placeholder="50000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -334,7 +345,7 @@ export default function TiketPesawatPage() {
                     name="profit"
                     value={formData.profit}
                     readOnly
-                    className="bg-muted"
+                    className="bg-muted tosca-emboss"
                   />
                 </div>
 
@@ -348,6 +359,7 @@ export default function TiketPesawatPage() {
                     value={formData.jumlah_penumpang}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -359,7 +371,7 @@ export default function TiketPesawatPage() {
                       handleSelectChange("payment_method", value)
                     }
                   >
-                    <SelectTrigger id="payment_method">
+                    <SelectTrigger id="payment_method" className="tosca-emboss">
                       <SelectValue placeholder="Pilih metode pembayaran" />
                     </SelectTrigger>
                     <SelectContent>
@@ -384,7 +396,7 @@ export default function TiketPesawatPage() {
                         handleSelectChange("bank_account", value)
                       }
                     >
-                      <SelectTrigger id="bank_account">
+                      <SelectTrigger id="bank_account" className="tosca-emboss">
                         <SelectValue placeholder="Pilih bank" />
                       </SelectTrigger>
                       <SelectContent>
@@ -407,12 +419,105 @@ export default function TiketPesawatPage() {
                   value={formData.keterangan}
                   onChange={handleChange}
                   placeholder="Keterangan tambahan..."
+                  className="tosca-emboss"
                 />
               </div>
 
-              <div className="pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Menyimpan..." : "Simpan"}
+              <div className="pt-6 flex gap-2">
+                <Button
+                  type="button"
+                  className="flex items-center gap-2 h-12 text-base font-medium rounded-lg transition-all duration-200 hover:scale-[1.02] w-full tosca-emboss-button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Validate form data
+                    if (
+                      !formData.kode_transaksi ||
+                      !formData.tanggal ||
+                      !formData.maskapai ||
+                      !formData.rute ||
+                      !formData.harga_jual
+                    ) {
+                      toast({
+                        title: "Data tidak lengkap",
+                        description:
+                          "Mohon lengkapi data transaksi sebelum menambahkan ke keranjang",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Add to cart
+                    const totalAmount =
+                      parseFloat(formData.harga_jual) *
+                      parseInt(formData.jumlah_penumpang);
+                    addItem({
+                      id: uuidv4(),
+                      type: "tiket-pesawat",
+                      name: `Tiket ${formData.maskapai}`,
+                      details: `${formData.rute} - ${formData.jumlah_penumpang} penumpang`,
+                      price: parseFloat(formData.harga_jual),
+                      quantity: parseInt(formData.jumlah_penumpang),
+                      date: formData.tanggal,
+                      kode_transaksi: formData.kode_transaksi,
+                      additionalData: {
+                        ...formData,
+                        harga_jual: parseFloat(formData.harga_jual),
+                        harga_basic: parseFloat(formData.harga_basic),
+                        fee_sales: parseFloat(formData.fee_sales),
+                        profit: parseFloat(formData.profit),
+                        jumlah_penumpang: parseInt(formData.jumlah_penumpang),
+                      },
+                    });
+
+                    // Show success message
+                    setSuccess(true);
+
+                    // Reset form
+                    setFormData({
+                      kode_transaksi: "",
+                      tanggal: "",
+                      maskapai: "",
+                      rute: "",
+                      harga_jual: "",
+                      harga_basic: "",
+                      fee_sales: "",
+                      profit: "",
+                      jumlah_penumpang: "1",
+                      keterangan: "",
+                      payment_method: "cash",
+                      bank_account: "",
+                    });
+
+                    toast({
+                      title: "Berhasil ditambahkan",
+                      description: (
+                        <div className="flex flex-col gap-2">
+                          <div>
+                            Tiket {formData.maskapai} ({formData.rute}) telah
+                            ditambahkan ke keranjang
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="self-end"
+                            onClick={() => {
+                              const closeToast = document.querySelector(
+                                "[data-radix-toast-close]",
+                              );
+                              if (closeToast instanceof HTMLElement) {
+                                closeToast.click();
+                              }
+                            }}
+                          >
+                            Tutup
+                          </Button>
+                        </div>
+                      ),
+                    });
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Tambahkan ke Keranjang
                 </Button>
               </div>
             </form>

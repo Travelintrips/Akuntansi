@@ -3,10 +3,15 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Car } from "lucide-react";
+import { Car, ShoppingCart } from "lucide-react";
 import supabase from "@/lib/supabase";
+import { useCart } from "@/context/CartContext";
+import { v4 as uuidv4 } from "uuid";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function RentalCarPage() {
+  const { addItem } = useCart();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
@@ -72,63 +77,50 @@ export default function RentalCarPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-
-    try {
-      // Here you would typically save to your database
-      // For demonstration, we'll just log the data and show success
-      console.log("Form data submitted:", formData);
-
-      // Example of how you might save this to Supabase
-      // Uncomment and modify as needed for your schema
-      /*
-      const { error } = await supabase
-        .from('rental_car_transactions')
-        .insert([
-          {
-            kode_transaksi: formData.kode_transaksi,
-            tanggal: formData.tanggal,
-            jenis_kendaraan: formData.jenis_kendaraan,
-            nomor_plat: formData.nomor_plat,
-            tanggal_mulai: formData.tanggal_mulai,
-            tanggal_selesai: formData.tanggal_selesai,
-            harga_per_hari: parseFloat(formData.harga_per_hari),
-            jumlah_hari: parseInt(formData.jumlah_hari),
-            total: parseFloat(formData.total),
-            keterangan: formData.keterangan,
-          }
-        ]);
-      
-      if (error) throw error;
-      */
-
-      setSuccess(true);
-      // Reset form after successful submission
-      setFormData({
-        kode_transaksi: "",
-        tanggal: "",
-        jenis_kendaraan: "",
-        nomor_plat: "",
-        tanggal_mulai: "",
-        tanggal_selesai: "",
-        harga_jual: "",
-        harga_basic: "",
-        fee_sales: "",
-        profit: "",
-        jumlah_hari: "1",
-        keterangan: "",
-      });
-    } catch (err: any) {
-      console.error("Error submitting form:", err);
-      setError(err.message || "Terjadi kesalahan saat menyimpan data");
-    } finally {
-      setLoading(false);
+  const addToCart = () => {
+    // Validate required fields
+    if (
+      !formData.kode_transaksi ||
+      !formData.tanggal ||
+      !formData.jenis_kendaraan ||
+      !formData.nomor_plat ||
+      !formData.tanggal_mulai ||
+      !formData.tanggal_selesai ||
+      !formData.harga_jual ||
+      !formData.harga_basic ||
+      !formData.fee_sales
+    ) {
+      setError("Harap isi semua field yang diperlukan");
+      return false;
     }
+
+    // Calculate total price
+    const hargaJual = parseFloat(formData.harga_jual) || 0;
+    const jumlahHari = parseInt(formData.jumlah_hari) || 1;
+    const totalPrice = hargaJual * jumlahHari;
+
+    // Add to cart
+    addItem({
+      id: uuidv4(),
+      type: "rental-car",
+      name: `Rental ${formData.jenis_kendaraan} (${formData.nomor_plat})`,
+      details: `${jumlahHari} hari, ${formData.tanggal_mulai} s/d ${formData.tanggal_selesai}`,
+      price: totalPrice,
+      quantity: 1,
+      date: formData.tanggal,
+      kode_transaksi: formData.kode_transaksi,
+      additionalData: { ...formData },
+    });
+
+    toast({
+      title: "Ditambahkan ke keranjang",
+      description: `${formData.jenis_kendaraan} (${formData.nomor_plat}) berhasil ditambahkan ke keranjang.`,
+    });
+
+    return true;
   };
+
+  // Removed handleSubmit function as we're now handling everything in the button click
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -141,25 +133,25 @@ export default function RentalCarPage() {
             <h1 className="text-3xl font-bold">Rental Mobil</h1>
           </div>
 
-          <div className="bg-card p-6 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-6">
+          <div className="bg-card p-8 rounded-xl border shadow-sm border-teal-200 tosca-emboss">
+            <h2 className="text-2xl font-bold mb-8 text-primary">
               Form Transaksi Rental Mobil
             </h2>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm mb-6">
+              <div className="bg-destructive/10 text-destructive p-5 rounded-lg text-base mb-8 shadow-sm border border-destructive/20">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-100 text-green-800 p-3 rounded-md text-sm mb-6">
+              <div className="bg-green-100 text-green-800 p-5 rounded-lg text-base mb-8 shadow-sm border border-green-200">
                 Data berhasil disimpan!
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="kode_transaksi">Kode Transaksi</Label>
                   <Input
@@ -169,6 +161,7 @@ export default function RentalCarPage() {
                     onChange={handleChange}
                     placeholder="RC-001"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -181,6 +174,7 @@ export default function RentalCarPage() {
                     value={formData.tanggal}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -193,6 +187,7 @@ export default function RentalCarPage() {
                     onChange={handleChange}
                     placeholder="Toyota Avanza"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -205,6 +200,7 @@ export default function RentalCarPage() {
                     onChange={handleChange}
                     placeholder="B 1234 ABC"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -217,6 +213,7 @@ export default function RentalCarPage() {
                     value={formData.tanggal_mulai}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -229,6 +226,7 @@ export default function RentalCarPage() {
                     value={formData.tanggal_selesai}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -242,6 +240,7 @@ export default function RentalCarPage() {
                     onChange={handleChange}
                     placeholder="500000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -255,6 +254,7 @@ export default function RentalCarPage() {
                     onChange={handleChange}
                     placeholder="400000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -268,6 +268,7 @@ export default function RentalCarPage() {
                     onChange={handleChange}
                     placeholder="25000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -278,7 +279,7 @@ export default function RentalCarPage() {
                     name="profit"
                     value={formData.profit}
                     readOnly
-                    className="bg-muted"
+                    className="bg-muted tosca-emboss"
                   />
                 </div>
 
@@ -292,6 +293,7 @@ export default function RentalCarPage() {
                     value={formData.jumlah_hari}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
               </div>
@@ -304,12 +306,99 @@ export default function RentalCarPage() {
                   value={formData.keterangan}
                   onChange={handleChange}
                   placeholder="Keterangan tambahan..."
+                  className="tosca-emboss"
                 />
               </div>
 
-              <div className="pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Menyimpan..." : "Simpan"}
+              <div className="pt-6 flex gap-2">
+                <Button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Validate required fields
+                    if (
+                      !formData.kode_transaksi ||
+                      !formData.tanggal ||
+                      !formData.jenis_kendaraan ||
+                      !formData.nomor_plat ||
+                      !formData.tanggal_mulai ||
+                      !formData.tanggal_selesai ||
+                      !formData.harga_jual ||
+                      !formData.harga_basic ||
+                      !formData.fee_sales
+                    ) {
+                      setError("Harap isi semua field yang diperlukan");
+                      return;
+                    }
+
+                    // Calculate total price
+                    const hargaJual = parseFloat(formData.harga_jual) || 0;
+                    const jumlahHari = parseInt(formData.jumlah_hari) || 1;
+                    const totalPrice = hargaJual * jumlahHari;
+
+                    // Add to cart
+                    addItem({
+                      id: uuidv4(),
+                      type: "rental-car",
+                      name: `Rental ${formData.jenis_kendaraan} (${formData.nomor_plat})`,
+                      details: `${jumlahHari} hari, ${formData.tanggal_mulai} s/d ${formData.tanggal_selesai}`,
+                      price: totalPrice,
+                      quantity: 1,
+                      date: formData.tanggal,
+                      kode_transaksi: formData.kode_transaksi,
+                      additionalData: { ...formData },
+                    });
+
+                    // Show success message
+                    setSuccess(true);
+
+                    // Reset form
+                    setFormData({
+                      kode_transaksi: "",
+                      tanggal: "",
+                      jenis_kendaraan: "",
+                      nomor_plat: "",
+                      tanggal_mulai: "",
+                      tanggal_selesai: "",
+                      harga_jual: "",
+                      harga_basic: "",
+                      fee_sales: "",
+                      profit: "",
+                      jumlah_hari: "1",
+                      keterangan: "",
+                    });
+
+                    toast({
+                      title: "Ditambahkan ke keranjang",
+                      description: (
+                        <div className="flex flex-col gap-2">
+                          <div>
+                            {formData.jenis_kendaraan} ({formData.nomor_plat})
+                            berhasil ditambahkan ke keranjang.
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="self-end"
+                            onClick={() => {
+                              const closeToast = document.querySelector(
+                                "[data-radix-toast-close]",
+                              );
+                              if (closeToast instanceof HTMLElement) {
+                                closeToast.click();
+                              }
+                            }}
+                          >
+                            Tutup
+                          </Button>
+                        </div>
+                      ),
+                    });
+                  }}
+                  className="flex items-center gap-2 h-12 text-base font-medium rounded-lg transition-all duration-200 hover:scale-[1.02] w-full tosca-emboss-button"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Tambahkan ke Keranjang
                 </Button>
               </div>
             </form>

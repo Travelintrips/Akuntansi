@@ -3,10 +3,15 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bus } from "lucide-react";
+import { Bus, ShoppingCart } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { v4 as uuidv4 } from "uuid";
+import { useToast } from "@/components/ui/use-toast";
 import supabase from "@/lib/supabase";
 
 export default function AirportTransferPage() {
+  const { addItem } = useCart();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
@@ -379,9 +384,67 @@ export default function AirportTransferPage() {
                 />
               </div>
 
-              <div className="pt-4">
+              <div className="pt-4 flex gap-2">
                 <Button type="submit" disabled={loading}>
                   {loading ? "Menyimpan..." : "Simpan"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  onClick={() => {
+                    // Validate required fields
+                    if (
+                      !formData.kode_transaksi ||
+                      !formData.tanggal ||
+                      !formData.jenis_kendaraan ||
+                      !formData.rute ||
+                      !formData.tanggal_jemput ||
+                      !formData.waktu_jemput ||
+                      !formData.harga_jual ||
+                      !formData.harga_basic ||
+                      !formData.fee_sales
+                    ) {
+                      toast({
+                        title: "Error",
+                        description: "Harap isi semua field yang diperlukan",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Add to cart
+                    const newItem = {
+                      id: uuidv4(),
+                      type: "airport-transfer",
+                      name: `Airport Transfer ${formData.jenis_kendaraan}`,
+                      details: `${formData.rute} - ${formData.tanggal_jemput} ${formData.waktu_jemput}`,
+                      price: parseFloat(formData.harga_jual) || 0,
+                      quantity: 1,
+                      date: formData.tanggal,
+                      kode_transaksi: formData.kode_transaksi,
+                      additionalData: {
+                        ...formData,
+                        harga_jual: parseFloat(formData.harga_jual) || 0,
+                        harga_basic: parseFloat(formData.harga_basic) || 0,
+                        fee_sales: parseFloat(formData.fee_sales) || 0,
+                        profit: parseFloat(formData.profit) || 0,
+                        jumlah_penumpang:
+                          parseInt(formData.jumlah_penumpang) || 1,
+                      },
+                    };
+
+                    console.log("Adding item to cart:", newItem);
+                    addItem(newItem);
+
+                    toast({
+                      title: "Berhasil",
+                      description: "Item berhasil ditambahkan ke keranjang",
+                    });
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Tambah ke Keranjang
                 </Button>
               </div>
             </form>

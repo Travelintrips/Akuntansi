@@ -3,11 +3,15 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Hotel } from "lucide-react";
+import { Hotel, ShoppingCart } from "lucide-react";
 import supabase from "@/lib/supabase";
 import { createJournalEntryFromSubAccount } from "@/lib/journalEntries";
+import { useCart } from "@/context/CartContext";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "@/components/ui/use-toast";
 
 export default function HotelPage() {
+  const { addItem } = useCart();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
@@ -78,108 +82,7 @@ export default function HotelPage() {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-
-    try {
-      // Save transaction data to database
-      const transactionData = {
-        kode_transaksi: formData.kode_transaksi,
-        tanggal: formData.tanggal,
-        nama_hotel: formData.nama_hotel,
-        lokasi: formData.lokasi,
-        tanggal_checkin: formData.tanggal_checkin,
-        tanggal_checkout: formData.tanggal_checkout,
-        jumlah_kamar: parseInt(formData.jumlah_kamar) || 1,
-        harga_jual: parseFloat(formData.harga_jual) || 0,
-        harga_basic: parseFloat(formData.harga_basic) || 0,
-        fee_sales: parseFloat(formData.fee_sales) || 0,
-        profit: parseFloat(formData.profit) || 0,
-        total_malam: parseInt(formData.total_malam) || 1,
-        keterangan: formData.keterangan,
-      };
-
-      console.log("Form data submitted:", transactionData);
-
-      // Example of how you might save this to Supabase
-      // Uncomment and modify as needed for your schema
-      /*
-      const { error } = await supabase
-        .from('hotel_transactions')
-        .insert([transactionData]);
-      
-      if (error) throw error;
-      */
-
-      // Create journal entry automatically
-      // Fetch the account IDs for Hotel transactions
-      // First, get the Pendapatan Hotel account ID (assuming account code 4102)
-      const { data: pendapatanHotelAccount, error: pendapatanError } =
-        await supabase
-          .from("chart_of_accounts")
-          .select("id")
-          .eq("account_code", "4102") // Pendapatan Hotel
-          .single();
-
-      if (pendapatanError)
-        throw new Error("Akun Pendapatan Hotel tidak ditemukan");
-      const pendapatanHotelAccountId = pendapatanHotelAccount.id;
-
-      // Get Kas account (assuming account code 1101)
-      const { data: kasAccount, error: kasError } = await supabase
-        .from("chart_of_accounts")
-        .select("id")
-        .eq("account_code", "1101") // Kas
-        .single();
-
-      if (kasError) throw new Error("Akun Kas tidak ditemukan");
-      const kasAccountId = kasAccount.id;
-
-      const totalAmount =
-        transactionData.harga_jual *
-        transactionData.jumlah_kamar *
-        transactionData.total_malam;
-
-      const journalResult = await createJournalEntryFromSubAccount({
-        date: transactionData.tanggal,
-        description: `Penjualan Hotel - ${transactionData.nama_hotel} (${transactionData.lokasi})`,
-        accountDebit: kasAccountId, // Kas/Bank (Debit)
-        accountCredit: pendapatanHotelAccountId, // Pendapatan Hotel (Credit)
-        amount: totalAmount,
-        reference: transactionData.kode_transaksi,
-      });
-
-      if (!journalResult.success) {
-        throw new Error(journalResult.error || "Gagal membuat jurnal entri");
-      }
-
-      setSuccess(true);
-      // Reset form after successful submission
-      setFormData({
-        kode_transaksi: "",
-        tanggal: "",
-        nama_hotel: "",
-        lokasi: "",
-        tanggal_checkin: "",
-        tanggal_checkout: "",
-        jumlah_kamar: "1",
-        harga_jual: "",
-        harga_basic: "",
-        fee_sales: "",
-        profit: "",
-        total_malam: "1",
-        keterangan: "",
-      });
-    } catch (err: any) {
-      console.error("Error submitting form:", err);
-      setError(err.message || "Terjadi kesalahan saat menyimpan data");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed handleSubmit function as we no longer need it
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -192,23 +95,91 @@ export default function HotelPage() {
             <h1 className="text-3xl font-bold">Penjualan Hotel</h1>
           </div>
 
-          <div className="bg-card p-6 rounded-lg border">
-            <h2 className="text-xl font-semibold mb-6">Form Transaksi Hotel</h2>
+          <div className="bg-card p-8 rounded-xl border shadow-sm">
+            <h2 className="text-2xl font-bold mb-8 text-primary">
+              Form Transaksi Hotel
+            </h2>
 
             {error && (
-              <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm mb-6">
+              <div className="bg-destructive/10 text-destructive p-5 rounded-lg text-base mb-8 shadow-sm border border-destructive/20">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-100 text-green-800 p-3 rounded-md text-sm mb-6">
-                Data berhasil disimpan!
+              <div className="bg-green-100 text-green-800 p-6 rounded-lg mb-8 border border-green-200 shadow-sm">
+                <h3 className="font-bold text-xl mb-4 text-green-900">
+                  Receipt Transaksi Hotel
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Kode Transaksi:</span>
+                    <span>{formData.kode_transaksi}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Tanggal:</span>
+                    <span>{formData.tanggal}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Hotel:</span>
+                    <span>{formData.nama_hotel}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Lokasi:</span>
+                    <span>{formData.lokasi}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Check-in:</span>
+                    <span>{formData.tanggal_checkin}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Check-out:</span>
+                    <span>{formData.tanggal_checkout}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Jumlah Kamar:</span>
+                    <span>{formData.jumlah_kamar}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Total Malam:</span>
+                    <span>{formData.total_malam}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Harga per Malam:</span>
+                    <span>
+                      Rp{" "}
+                      {parseFloat(formData.harga_jual).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                  <div className="border-t pt-4 mt-3">
+                    <div className="flex justify-between font-bold">
+                      <span>Total:</span>
+                      <span>
+                        Rp{" "}
+                        {(
+                          parseFloat(formData.harga_jual) *
+                          parseInt(formData.jumlah_kamar) *
+                          parseInt(formData.total_malam)
+                        ).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSuccess(false)}
+                    className="w-full"
+                  >
+                    Tutup Receipt
+                  </Button>
+                </div>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="kode_transaksi">Kode Transaksi</Label>
                   <Input
@@ -218,6 +189,7 @@ export default function HotelPage() {
                     onChange={handleChange}
                     placeholder="HTL-001"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -230,6 +202,7 @@ export default function HotelPage() {
                     value={formData.tanggal}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -242,6 +215,7 @@ export default function HotelPage() {
                     onChange={handleChange}
                     placeholder="Grand Hyatt"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -254,6 +228,7 @@ export default function HotelPage() {
                     onChange={handleChange}
                     placeholder="Jakarta"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -266,6 +241,7 @@ export default function HotelPage() {
                     value={formData.tanggal_checkin}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -278,6 +254,7 @@ export default function HotelPage() {
                     value={formData.tanggal_checkout}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -291,6 +268,7 @@ export default function HotelPage() {
                     value={formData.jumlah_kamar}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -304,6 +282,7 @@ export default function HotelPage() {
                     onChange={handleChange}
                     placeholder="1000000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -317,6 +296,7 @@ export default function HotelPage() {
                     onChange={handleChange}
                     placeholder="800000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -330,6 +310,7 @@ export default function HotelPage() {
                     onChange={handleChange}
                     placeholder="50000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -340,7 +321,7 @@ export default function HotelPage() {
                     name="profit"
                     value={formData.profit}
                     readOnly
-                    className="bg-muted"
+                    className="bg-muted tosca-emboss"
                   />
                 </div>
 
@@ -354,6 +335,7 @@ export default function HotelPage() {
                     value={formData.total_malam}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
               </div>
@@ -366,12 +348,71 @@ export default function HotelPage() {
                   value={formData.keterangan}
                   onChange={handleChange}
                   placeholder="Keterangan tambahan..."
+                  className="tosca-emboss"
                 />
               </div>
 
-              <div className="pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Menyimpan..." : "Simpan"}
+              <div className="pt-6 flex gap-2">
+                <Button
+                  type="button"
+                  className="tosca-emboss-button flex items-center gap-2 w-full h-12 text-base font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]"
+                  onClick={() => {
+                    // Validate form data
+                    if (
+                      !formData.kode_transaksi ||
+                      !formData.tanggal ||
+                      !formData.nama_hotel ||
+                      !formData.lokasi ||
+                      !formData.harga_jual
+                    ) {
+                      toast({
+                        title: "Data tidak lengkap",
+                        description:
+                          "Mohon lengkapi data transaksi sebelum menambahkan ke keranjang",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Calculate total amount
+                    const totalAmount =
+                      parseFloat(formData.harga_jual) *
+                      parseInt(formData.jumlah_kamar) *
+                      parseInt(formData.total_malam);
+
+                    // Add to cart
+                    addItem({
+                      id: uuidv4(),
+                      type: "hotel",
+                      name: `Hotel ${formData.nama_hotel}`,
+                      details: `${formData.lokasi} - ${formData.jumlah_kamar} kamar, ${formData.total_malam} malam`,
+                      price: parseFloat(formData.harga_jual),
+                      quantity: parseInt(formData.jumlah_kamar),
+                      date: formData.tanggal,
+                      kode_transaksi: formData.kode_transaksi,
+                      additionalData: {
+                        ...formData,
+                        harga_jual: parseFloat(formData.harga_jual),
+                        harga_basic: parseFloat(formData.harga_basic),
+                        fee_sales: parseFloat(formData.fee_sales),
+                        profit: parseFloat(formData.profit),
+                        jumlah_kamar: parseInt(formData.jumlah_kamar),
+                        total_malam: parseInt(formData.total_malam),
+                        totalAmount: totalAmount,
+                      },
+                    });
+
+                    // Show receipt
+                    setSuccess(true);
+
+                    toast({
+                      title: "Berhasil ditambahkan",
+                      description: `Hotel ${formData.nama_hotel} (${formData.lokasi}) telah ditambahkan ke keranjang`,
+                    });
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Tambahkan ke Keranjang
                 </Button>
               </div>
             </form>

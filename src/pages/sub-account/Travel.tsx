@@ -3,10 +3,15 @@ import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Briefcase } from "lucide-react";
+import { Briefcase, ShoppingCart } from "lucide-react";
 import supabase from "@/lib/supabase";
+import { createJournalEntryFromSubAccount } from "@/lib/journalEntries";
+import { useCart } from "@/context/CartContext";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "@/components/ui/use-toast";
 
 export default function TravelPage() {
+  const { addItem } = useCart();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
@@ -379,9 +384,106 @@ export default function TravelPage() {
                 />
               </div>
 
-              <div className="pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Menyimpan..." : "Simpan"}
+              <div className="pt-4 flex gap-2">
+                <Button
+                  type="button"
+                  className="flex items-center gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Validate form data
+                    if (
+                      !formData.kode_transaksi ||
+                      !formData.tanggal ||
+                      !formData.nama_paket ||
+                      !formData.tujuan ||
+                      !formData.harga_jual
+                    ) {
+                      toast({
+                        title: "Data tidak lengkap",
+                        description:
+                          "Mohon lengkapi data transaksi sebelum menambahkan ke keranjang",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // Calculate total amount
+                    const totalAmount =
+                      parseFloat(formData.harga_jual) *
+                      parseInt(formData.jumlah_peserta);
+
+                    // Add to cart
+                    addItem({
+                      id: uuidv4(),
+                      type: "travel",
+                      name: `Paket ${formData.nama_paket}`,
+                      details: `${formData.tujuan} - ${formData.jumlah_peserta} peserta`,
+                      price: parseFloat(formData.harga_jual),
+                      quantity: parseInt(formData.jumlah_peserta),
+                      date: formData.tanggal,
+                      kode_transaksi: formData.kode_transaksi,
+                      additionalData: {
+                        ...formData,
+                        harga_jual: parseFloat(formData.harga_jual),
+                        harga_basic: parseFloat(formData.harga_basic),
+                        fee_sales: parseFloat(formData.fee_sales),
+                        profit: parseFloat(formData.profit),
+                        jumlah_peserta: parseInt(formData.jumlah_peserta),
+                        totalAmount: totalAmount,
+                      },
+                    });
+
+                    // Show success message
+                    setSuccess(true);
+
+                    // Reset form
+                    setFormData({
+                      kode_transaksi: "",
+                      tanggal: "",
+                      nama_paket: "",
+                      tujuan: "",
+                      tanggal_berangkat: "",
+                      tanggal_pulang: "",
+                      jumlah_peserta: "1",
+                      harga_jual: "",
+                      harga_basic: "",
+                      fee_sales: "",
+                      profit: "",
+                      keterangan: "",
+                    });
+                    setSelectedCategory(null);
+                    setSearchTerm("");
+
+                    toast({
+                      title: "Berhasil ditambahkan",
+                      description: (
+                        <div className="flex flex-col gap-2">
+                          <div>
+                            Paket {formData.nama_paket} ({formData.tujuan})
+                            telah ditambahkan ke keranjang
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="self-end"
+                            onClick={() => {
+                              const closeToast = document.querySelector(
+                                "[data-radix-toast-close]",
+                              );
+                              if (closeToast instanceof HTMLElement) {
+                                closeToast.click();
+                              }
+                            }}
+                          >
+                            Tutup
+                          </Button>
+                        </div>
+                      ),
+                    });
+                  }}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Tambahkan ke Keranjang
                 </Button>
               </div>
             </form>

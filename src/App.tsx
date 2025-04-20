@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import BalanceSheetPage from "./pages/BalanceSheet";
 import COAPage from "./pages/coa/index";
 import supabase from "./lib/supabase";
+import { CartProvider } from "./context/CartContext";
 
 // Import sub-account pages
 import TiketPesawatPage from "./pages/sub-account/TiketPesawat";
@@ -63,123 +64,125 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   return (
-    <Suspense fallback={<p>Loading...</p>}>
-      <div className="min-h-screen">
-        {/* For the tempo routes */}
-        {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
+    <CartProvider>
+      <Suspense fallback={<p>Loading...</p>}>
+        <div className="min-h-screen">
+          {/* For the tempo routes */}
+          {import.meta.env.VITE_TEMPO === "true" && useRoutes(routes)}
 
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/auth" element={<AuthPage />} />
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="auth" element={<AuthPage />} />
 
-          {/* Protected routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/coa"
-            element={
-              <ProtectedRoute>
-                <COAPage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Protected routes */}
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/coa"
+              element={
+                <ProtectedRoute>
+                  <COAPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Sub-account protected routes */}
-          <Route
-            path="/sub-account/tiket-pesawat"
-            element={
-              <ProtectedRoute>
-                <TiketPesawatPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sub-account/hotel"
-            element={
-              <ProtectedRoute>
-                <HotelPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sub-account/passenger-handling"
-            element={
-              <ProtectedRoute>
-                <PassengerHandlingPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sub-account/travel"
-            element={
-              <ProtectedRoute>
-                <TravelPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sub-account/airport-transfer"
-            element={
-              <ProtectedRoute>
-                <AirportTransferPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/sub-account/rental-car"
-            element={
-              <ProtectedRoute>
-                <RentalCarPage />
-              </ProtectedRoute>
-            }
-          />
+            {/* Sub-account protected routes */}
+            <Route
+              path="/sub-account/tiket-pesawat"
+              element={
+                <ProtectedRoute>
+                  <TiketPesawatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sub-account/hotel"
+              element={
+                <ProtectedRoute>
+                  <HotelPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sub-account/passenger-handling"
+              element={
+                <ProtectedRoute>
+                  <PassengerHandlingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sub-account/travel"
+              element={
+                <ProtectedRoute>
+                  <TravelPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sub-account/airport-transfer"
+              element={
+                <ProtectedRoute>
+                  <AirportTransferPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/sub-account/rental-car"
+              element={
+                <ProtectedRoute>
+                  <RentalCarPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route
-            path="/journal"
-            element={
-              <ProtectedRoute>
-                <JournalPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ledger"
-            element={
-              <ProtectedRoute>
-                <LedgerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <ReportsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/balance-sheet"
-            element={
-              <ProtectedRoute>
-                <BalanceSheetPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/journal"
+              element={
+                <ProtectedRoute>
+                  <JournalPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ledger"
+              element={
+                <ProtectedRoute>
+                  <LedgerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ProtectedRoute>
+                  <ReportsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/balance-sheet"
+              element={
+                <ProtectedRoute>
+                  <BalanceSheetPage />
+                </ProtectedRoute>
+              }
+            />
 
-          {/* Add Tempo routes before the catch-all */}
-          {import.meta.env.VITE_TEMPO === "true" && (
-            <Route path="/tempobook/*" element={<div />} />
-          )}
-        </Routes>
-      </div>
-    </Suspense>
+            {/* Add Tempo routes before the catch-all */}
+            {import.meta.env.VITE_TEMPO === "true" && (
+              <Route path="/tempobook/*" element={<div />} />
+            )}
+          </Routes>
+        </div>
+      </Suspense>
+    </CartProvider>
   );
 }
 

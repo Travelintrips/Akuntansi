@@ -14,8 +14,11 @@ import {
   Briefcase,
   Car,
   Bus,
+  ShoppingCart,
 } from "lucide-react";
 import { useState } from "react";
+import { useCart } from "../context/CartContext";
+import Cart from "../components/cart/Cart";
 
 interface SidebarProps {
   onNavItemClick?: (item: string) => void;
@@ -24,12 +27,28 @@ interface SidebarProps {
 
 const Sidebar = ({ onNavItemClick, activeItem }: SidebarProps) => {
   const [subAccountsOpen, setSubAccountsOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { totalItems } = useCart();
 
   return (
     <div className="h-screen w-64 bg-card border-r p-4 flex flex-col">
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <h2 className="text-xl font-bold">Akuntansi App</h2>
+        <button
+          onClick={() => setIsCartOpen(true)}
+          className="relative p-2 rounded-full hover:bg-accent transition-colors"
+          aria-label="Open cart"
+        >
+          <ShoppingCart className="h-5 w-5" />
+          {totalItems > 0 && (
+            <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {totalItems}
+            </span>
+          )}
+        </button>
       </div>
+
+      {isCartOpen && <Cart onClose={() => setIsCartOpen(false)} />}
 
       <nav className="space-y-1 flex-1">
         <Link
