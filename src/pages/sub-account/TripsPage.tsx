@@ -1,23 +1,22 @@
 import { useState } from "react";
+import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Briefcase, ShoppingCart } from "lucide-react";
-import supabase from "@/lib/supabase";
-import { createJournalEntryFromSubAccount } from "@/lib/journalEntries";
 import { useCart } from "@/context/CartContext";
 import { v4 as uuidv4 } from "uuid";
-import { toast } from "@/components/ui/use-toast";
-import BackButton from "@/components/common/BackButton";
-import CartButton from "@/components/cart/CartButton";
+import { useToast } from "@/components/ui/use-toast";
+import supabase from "@/lib/supabase";
 
-export default function TravelPage() {
+export default function TripsPage() {
   const { addItem } = useCart();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     kode_transaksi: "",
     tanggal: "",
-    nama_paket: "",
-    tujuan: "",
+    jenis_trip: "",
+    destinasi: "",
     tanggal_berangkat: "",
     tanggal_pulang: "",
     jumlah_peserta: "1",
@@ -38,11 +37,6 @@ export default function TravelPage() {
     const { name, value } = e.target;
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
-
-      // No need to calculate total anymore
-      if (name === "harga_jual" || name === "jumlah_peserta") {
-        // Calculation removed
-      }
 
       // Calculate profit
       if (
@@ -77,12 +71,12 @@ export default function TravelPage() {
   };
 
   const categories = [
-    "Paket Wisata Bali",
-    "Paket Wisata Lombok",
-    "Paket Wisata Yogyakarta",
-    "Paket Wisata Bandung",
-    "Paket Wisata Malang",
-    "Paket Wisata Bromo",
+    "Domestic",
+    "International",
+    "Adventure",
+    "Cultural",
+    "Beach",
+    "Mountain",
   ];
 
   const filteredCategories = categories.filter((category) =>
@@ -97,39 +91,15 @@ export default function TravelPage() {
 
     try {
       // Here you would typically save to your database
-      // For demonstration, we'll just log the data and show success
       console.log("Form data submitted:", formData);
-
-      // Example of how you might save this to Supabase
-      // Uncomment and modify as needed for your schema
-      /*
-      const { error } = await supabase
-        .from('travel_transactions')
-        .insert([
-          {
-            kode_transaksi: formData.kode_transaksi,
-            tanggal: formData.tanggal,
-            nama_paket: formData.nama_paket,
-            tujuan: formData.tujuan,
-            tanggal_berangkat: formData.tanggal_berangkat,
-            tanggal_pulang: formData.tanggal_pulang,
-            jumlah_peserta: parseInt(formData.jumlah_peserta),
-            harga_per_orang: parseFloat(formData.harga_per_orang),
-            total: parseFloat(formData.total),
-            keterangan: formData.keterangan,
-          }
-        ]);
-      
-      if (error) throw error;
-      */
 
       setSuccess(true);
       // Reset form after successful submission
       setFormData({
         kode_transaksi: "",
         tanggal: "",
-        nama_paket: "",
-        tujuan: "",
+        jenis_trip: "",
+        destinasi: "",
         tanggal_berangkat: "",
         tanggal_pulang: "",
         jumlah_peserta: "1",
@@ -150,80 +120,43 @@ export default function TravelPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="p-8 overflow-auto">
+    <div className="min-h-screen bg-background flex">
+      <Sidebar activeItem="sub-account-trips" />
+
+      <div className="flex-1 p-6 overflow-auto">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <BackButton to="/sub-account" />
-              <Briefcase className="h-8 w-8" />
-              <h1 className="text-3xl font-bold">Travel</h1>
-            </div>
-            <CartButton />
+          <div className="flex items-center gap-3 mb-8">
+            <Briefcase className="h-8 w-8" />
+            <h1 className="text-3xl font-bold">Booking Trips</h1>
           </div>
 
-          <div className="bg-card p-6 rounded-lg border">
+          <div className="bg-card p-6 rounded-lg border border-teal-500 tosca-emboss">
             <h2 className="text-xl font-semibold mb-6">
-              Form Transaksi Travel
+              Form Transaksi Booking Trips
             </h2>
 
-            {/* Category Search Section */}
+            {/* Category Stat Cards */}
             <div className="mb-6">
-              <Label htmlFor="category-search">Search Category</Label>
-              <div className="relative">
-                <Input
-                  id="category-search"
-                  placeholder="Search for a category..."
-                  value={selectedCategory || searchTerm}
-                  onChange={handleSearchChange}
-                  className="mb-2"
-                />
-                {selectedCategory && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedCategory(null);
-                        setSearchTerm("");
-                      }}
-                      className="h-6 px-2"
-                    >
-                      ×
-                    </Button>
+              <Label className="mb-2 block">Pilih Kategori Trip</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {categories.map((category) => (
+                  <div
+                    key={category}
+                    onClick={() => handleCategorySelect(category)}
+                    className={`p-4 rounded-lg border tosca-emboss cursor-pointer transition-all ${selectedCategory === category ? "bg-primary/10 border-primary" : "bg-card hover:bg-accent/50"}`}
+                  >
+                    <div className="font-medium">{category}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {category === "Domestic" && "Perjalanan dalam negeri"}
+                      {category === "International" && "Perjalanan luar negeri"}
+                      {category === "Adventure" && "Wisata petualangan"}
+                      {category === "Cultural" && "Wisata budaya"}
+                      {category === "Beach" && "Wisata pantai"}
+                      {category === "Mountain" && "Wisata pegunungan"}
+                    </div>
                   </div>
-                )}
+                ))}
               </div>
-
-              {!selectedCategory && searchTerm && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {filteredCategories.map((category) => (
-                    <Button
-                      key={category}
-                      variant="outline"
-                      onClick={() => handleCategorySelect(category)}
-                      className="justify-start"
-                    >
-                      {category}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {!selectedCategory && !searchTerm && (
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  {categories.map((category) => (
-                    <Button
-                      key={category}
-                      variant="outline"
-                      onClick={() => handleCategorySelect(category)}
-                      className="justify-start"
-                    >
-                      {category}
-                    </Button>
-                  ))}
-                </div>
-              )}
             </div>
 
             {error && (
@@ -247,8 +180,9 @@ export default function TravelPage() {
                     name="kode_transaksi"
                     value={formData.kode_transaksi}
                     onChange={handleChange}
-                    placeholder="TRV-001"
+                    placeholder="TR-001"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -261,30 +195,33 @@ export default function TravelPage() {
                     value={formData.tanggal}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="nama_paket">Nama Paket</Label>
+                  <Label htmlFor="jenis_trip">Jenis Trip</Label>
                   <Input
-                    id="nama_paket"
-                    name="nama_paket"
-                    value={formData.nama_paket || selectedCategory || ""}
+                    id="jenis_trip"
+                    name="jenis_trip"
+                    value={formData.jenis_trip || selectedCategory || ""}
                     onChange={handleChange}
-                    placeholder="Paket Wisata Bali"
+                    placeholder="Domestic"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tujuan">Tujuan</Label>
+                  <Label htmlFor="destinasi">Destinasi</Label>
                   <Input
-                    id="tujuan"
-                    name="tujuan"
-                    value={formData.tujuan}
+                    id="destinasi"
+                    name="destinasi"
+                    value={formData.destinasi}
                     onChange={handleChange}
                     placeholder="Bali"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -297,6 +234,7 @@ export default function TravelPage() {
                     value={formData.tanggal_berangkat}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -309,6 +247,7 @@ export default function TravelPage() {
                     value={formData.tanggal_pulang}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -322,11 +261,12 @@ export default function TravelPage() {
                     value={formData.jumlah_peserta}
                     onChange={handleChange}
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="harga_jual">Harga Jual per Orang (Rp)</Label>
+                  <Label htmlFor="harga_jual">Harga Jual (Rp)</Label>
                   <Input
                     id="harga_jual"
                     name="harga_jual"
@@ -335,6 +275,7 @@ export default function TravelPage() {
                     onChange={handleChange}
                     placeholder="5000000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -346,8 +287,9 @@ export default function TravelPage() {
                     type="number"
                     value={formData.harga_basic}
                     onChange={handleChange}
-                    placeholder="4000000"
+                    placeholder="4500000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -359,8 +301,9 @@ export default function TravelPage() {
                     type="number"
                     value={formData.fee_sales}
                     onChange={handleChange}
-                    placeholder="250000"
+                    placeholder="100000"
                     required
+                    className="tosca-emboss"
                   />
                 </div>
 
@@ -371,7 +314,7 @@ export default function TravelPage() {
                     name="profit"
                     value={formData.profit}
                     readOnly
-                    className="bg-muted"
+                    className="bg-muted tosca-emboss"
                   />
                 </div>
               </div>
@@ -384,109 +327,74 @@ export default function TravelPage() {
                   value={formData.keterangan}
                   onChange={handleChange}
                   placeholder="Keterangan tambahan..."
+                  className="tosca-emboss"
                 />
               </div>
 
               <div className="pt-4 flex gap-2">
                 <Button
+                  type="submit"
+                  disabled={loading}
+                  className="tosca-emboss"
+                >
+                  {loading ? "Menyimpan..." : "Simpan"}
+                </Button>
+                <Button
                   type="button"
-                  className="flex items-center gap-2"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Validate form data
+                  variant="outline"
+                  className="flex items-center gap-2 tosca-emboss-button"
+                  onClick={() => {
+                    // Validate required fields
                     if (
                       !formData.kode_transaksi ||
                       !formData.tanggal ||
-                      !formData.nama_paket ||
-                      !formData.tujuan ||
-                      !formData.harga_jual
+                      !formData.jenis_trip ||
+                      !formData.destinasi ||
+                      !formData.tanggal_berangkat ||
+                      !formData.tanggal_pulang ||
+                      !formData.harga_jual ||
+                      !formData.harga_basic ||
+                      !formData.fee_sales
                     ) {
                       toast({
-                        title: "Data tidak lengkap",
-                        description:
-                          "Mohon lengkapi data transaksi sebelum menambahkan ke keranjang",
+                        title: "Error",
+                        description: "Harap isi semua field yang diperlukan",
                         variant: "destructive",
                       });
                       return;
                     }
 
-                    // Calculate total amount
-                    const totalAmount =
-                      parseFloat(formData.harga_jual) *
-                      parseInt(formData.jumlah_peserta);
-
                     // Add to cart
-                    addItem({
+                    const newItem = {
                       id: uuidv4(),
-                      type: "travel",
-                      name: `Paket ${formData.nama_paket}`,
-                      details: `${formData.tujuan} - ${formData.jumlah_peserta} peserta`,
-                      price: parseFloat(formData.harga_jual),
-                      quantity: parseInt(formData.jumlah_peserta),
+                      type: "trips",
+                      name: `Trip ${formData.jenis_trip} - ${formData.destinasi}`,
+                      details: `${formData.tanggal_berangkat} s/d ${formData.tanggal_pulang} (${formData.jumlah_peserta} orang)`,
+                      price: parseFloat(formData.harga_jual) || 0,
+                      quantity: 1,
                       date: formData.tanggal,
                       kode_transaksi: formData.kode_transaksi,
                       additionalData: {
                         ...formData,
-                        harga_jual: parseFloat(formData.harga_jual),
-                        harga_basic: parseFloat(formData.harga_basic),
-                        fee_sales: parseFloat(formData.fee_sales),
-                        profit: parseFloat(formData.profit),
-                        jumlah_peserta: parseInt(formData.jumlah_peserta),
-                        totalAmount: totalAmount,
+                        harga_jual: parseFloat(formData.harga_jual) || 0,
+                        harga_basic: parseFloat(formData.harga_basic) || 0,
+                        fee_sales: parseFloat(formData.fee_sales) || 0,
+                        profit: parseFloat(formData.profit) || 0,
+                        jumlah_peserta: parseInt(formData.jumlah_peserta) || 1,
                       },
-                    });
+                    };
 
-                    // Show success message
-                    setSuccess(true);
-
-                    // Reset form
-                    setFormData({
-                      kode_transaksi: "",
-                      tanggal: "",
-                      nama_paket: "",
-                      tujuan: "",
-                      tanggal_berangkat: "",
-                      tanggal_pulang: "",
-                      jumlah_peserta: "1",
-                      harga_jual: "",
-                      harga_basic: "",
-                      fee_sales: "",
-                      profit: "",
-                      keterangan: "",
-                    });
-                    setSelectedCategory(null);
-                    setSearchTerm("");
+                    console.log("Adding item to cart:", newItem);
+                    addItem(newItem);
 
                     toast({
-                      title: "Berhasil ditambahkan",
-                      description: (
-                        <div className="flex flex-col gap-2">
-                          <div>
-                            Paket {formData.nama_paket} ({formData.tujuan})
-                            telah ditambahkan ke keranjang
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="self-end"
-                            onClick={() => {
-                              const closeToast = document.querySelector(
-                                "[data-radix-toast-close]",
-                              );
-                              if (closeToast instanceof HTMLElement) {
-                                closeToast.click();
-                              }
-                            }}
-                          >
-                            Tutup
-                          </Button>
-                        </div>
-                      ),
+                      title: "Berhasil",
+                      description: "Item berhasil ditambahkan ke keranjang",
                     });
                   }}
                 >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  Tambahkan ke Keranjang
+                  <ShoppingCart className="h-4 w-4" />
+                  Tambah ke Keranjang
                 </Button>
               </div>
             </form>

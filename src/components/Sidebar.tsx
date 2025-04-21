@@ -86,6 +86,13 @@ const Sidebar = ({ onNavItemClick, activeItem }: SidebarProps) => {
           {subAccountsOpen && (
             <div className="pl-6 space-y-1">
               <Link
+                to="/sub-account"
+                className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors ${activeItem === "sub-account" ? "bg-accent" : ""}`}
+              >
+                <ListTree className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Link>
+              <Link
                 to="/sub-account/tiket-pesawat"
                 className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-accent transition-colors ${activeItem === "sub-account-tiket-pesawat" ? "bg-accent" : ""}`}
               >

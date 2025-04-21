@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Sidebar from "@/components/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +7,8 @@ import supabase from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
 import { v4 as uuidv4 } from "uuid";
 import { useToast } from "@/components/ui/use-toast";
+import BackButton from "@/components/common/BackButton";
+import CartButton from "@/components/cart/CartButton";
 
 export default function RentalCarPage() {
   const { addItem } = useCart();
@@ -123,14 +124,16 @@ export default function RentalCarPage() {
   // Removed handleSubmit function as we're now handling everything in the button click
 
   return (
-    <div className="min-h-screen bg-background flex">
-      <Sidebar activeItem="sub-account-rental-car" />
-
-      <div className="flex-1 p-6 overflow-auto">
+    <div className="min-h-screen bg-background">
+      <div className="p-8 overflow-auto">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <Car className="h-8 w-8" />
-            <h1 className="text-3xl font-bold">Rental Mobil</h1>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <BackButton to="/sub-account" />
+              <Car className="h-8 w-8" />
+              <h1 className="text-3xl font-bold">Rental Mobil</h1>
+            </div>
+            <CartButton />
           </div>
 
           <div className="bg-card p-8 rounded-xl border shadow-sm border-teal-200 tosca-emboss">

@@ -13,6 +13,7 @@ import supabase from "./lib/supabase";
 import { CartProvider } from "./context/CartContext";
 
 // Import sub-account pages
+import SubAccountDashboard from "./pages/sub-account/SubAccountDashboard";
 import TiketPesawatPage from "./pages/sub-account/TiketPesawat";
 import HotelPage from "./pages/sub-account/Hotel";
 import PassengerHandlingPage from "./pages/sub-account/PassengerHandling";
@@ -72,7 +73,7 @@ function App() {
 
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="auth" element={<AuthPage />} />
+            <Route path="/auth" element={<AuthPage />} />
 
             {/* Protected routes */}
             <Route
@@ -93,6 +94,14 @@ function App() {
             />
 
             {/* Sub-account protected routes */}
+            <Route
+              path="/sub-account"
+              element={
+                <ProtectedRoute>
+                  <SubAccountDashboard />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/sub-account/tiket-pesawat"
               element={
